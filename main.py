@@ -7,6 +7,7 @@ import asyncio
 import os
 import glob
 import config
+import functions
 
 # 設定 bot 的前綴字元
 bot = commands.Bot(command_prefix='m.', intents=discord.Intents.all())
@@ -34,49 +35,7 @@ async def on_ready():
 @bot.tree.command(name='play')
 @app_commands.describe(url = "Enter the youtube link here")
 async def play(ctx: discord.Interaction, url: str):
-    await ctx.response.defer()
-    asyncio.sleep(50)
-    error = 0
-    # 取得使用者目前所在的語音頻道
-    voice_channel = ctx.user.voice.channel
-    if voice_channel is None:
-        # 若使用者不在任何語音頻道，回傳錯誤訊息
-        await ctx.response.send_message("You need to be in a voice channel to play music")
-    # 取得 bot 的音訊連線物件
-    vc = get(bot.voice_clients, guild=ctx.guild)
-    # 播放音樂
-    if vc and vc.is_connected():
-        # 若 bot 已經連線至語音頻道，則加入使用者所在的語音頻道
-        await vc.move_to(voice_channel)
-    else:
-        # 若 bot 尚未連線至語音頻道，則加入使用者所在的語音頻道
-        vc = await voice_channel.connect()
-        
-    if vc.is_playing():
-        vc.stop()
-    
-    try:
-        files = glob.glob('./audio/*')
-        for f in files:
-            os.remove(f)
-    except Exception as e:
-        print(e)
-    try:
-        ydl_opts = {'outtmpl': "./audio/%(id)s.%(ext)s", 'format': 'bestaudio'}
-        # 下載音樂
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(url)
-            filename = ydl.prepare_filename(info)
-        try:
-            vc.play(discord.FFmpegPCMAudio(source=f"{filename}"))
-        except Exception as e:
-            error = 1
-            await ctx.followup.send("Video is downloaded but play error, please try try again.")
-            raise e
-        await ctx.followup.send(f"Playing: {url} \n This bot is updated by killicit.wy")
-    except Exception as e:
-        if error != 1:
-            await ctx.followup.send("Error: maybe this sone can't be downloaded or connection error, You may try again later.", ephemeral=True)
+    await functions.play(ctx, url, bot)
     
 
 # 在此處填入你的 bot token
