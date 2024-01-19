@@ -62,20 +62,22 @@ async def play(ctx: discord.Interaction, url: str):
     except Exception as e:
         print(e)
     try:
-        ydl_opts = {'outtmpl': './audio/%(title)s-%(id)s.mp4', 'format': 'mp4'}
+        ydl_opts = {'outtmpl': "./audio/%(id)s.%(ext)s", 'format': 'bestaudio'}
         # 下載音樂
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url)
             filename = ydl.prepare_filename(info)
-    except Exception as e:
-        error = 1
-    
-    vc.play(discord.FFmpegPCMAudio(source=f"{filename}"))
-    
-    if error == 1 :
-        await ctx.followup.send("Error: maybe this sone can't be downloaded or connection error, You may try again later.", ephemeral=True)
-    else:
+        try:
+            vc.play(discord.FFmpegPCMAudio(source=f"{filename}"))
+        except Exception as e:
+            error = 1
+            await ctx.followup.send("Video is downloaded but play error, please try try again.")
+            raise e
         await ctx.followup.send(f"Playing: {url} \n This bot is updated by killicit.wy")
+    except Exception as e:
+        if error != 1:
+            await ctx.followup.send("Error: maybe this sone can't be downloaded or connection error, You may try again later.", ephemeral=True)
+    
 
 # 在此處填入你的 bot token
 bot.run(config.TOKEN)
