@@ -7,7 +7,7 @@ import asyncio
 import os
 import glob
 import config
-import functions
+from functions import *
 
 # 設定 bot 的前綴字元
 bot = commands.Bot(command_prefix='m.', intents=discord.Intents.all())
@@ -31,12 +31,18 @@ async def on_ready():
         activity=discord.Activity(name='its code contributor: killicit.wy', type=discord.ActivityType.listening)
     )
 
-# 建立一個 play 指令，用於播放音樂
+# 建立一個 play 指令，以播放音樂
 @bot.tree.command(name='play')
 @app_commands.describe(url = "Enter the youtube link here")
 async def play(ctx: discord.Interaction, url: str):
-    await functions.play(ctx, url, bot)
-    
+    await player(ctx, url, bot)
 
-# 在此處填入你的 bot token
+# 建立一個 loop 指令，以loop音樂
+@bot.tree.command(name='loop')
+@app_commands.describe(url = "Enter the youtube link here")
+async def loop(ctx: discord.Interaction, url: str):
+    await player(ctx, url, bot, loop=True)
+
+# 在 ./config.py 填入你的 bot token
+# TOKEN = "Your Token"
 bot.run(config.TOKEN)
