@@ -24,7 +24,7 @@ async def player(ctx, url, bot, loop=False):
         # Download
         msg = await ctx.followup.send(content="Trying to download", wait=True)
         try:
-            file = download_music(url)
+            file = download_music(url, msg, bot)
         except Exception as e:
             await raise_except(e, msg, content="Error: maybe this song can't be downloaded or connection error, You may try again later.")
 
@@ -38,6 +38,11 @@ async def player(ctx, url, bot, loop=False):
     except Exception as e:
         print(e)
         await ctx.followup.send(content="Error")
+
+def raise_except(e, msg, content):
+    print(e)
+    asyncio.get_event_loop().create_task(msg.edit(content = content))
+    raise e
 
 # 取得使用者目前所在的語音頻道 -> voice_channel
 def get_voice_channel(ctx: discord.Interaction):
@@ -70,11 +75,11 @@ def delete_temp():
         print(e)
 
 # 下載音樂
-def download_music(url):
-    # progress_hooks = partial(hook, msg=msg)
+def download_music(url, msg, bot):
+    # progress_hooks = [lambda d: bot.loop.create_task(progress_hook(d, msg))]
     ydl_opts = {'outtmpl': "./audio/%(id)s.%(ext)s", 
                 'format': 'bestaudio', 
-                # 'progress_hooks': [progress_hooks], 
+                # 'progress_hooks': progress_hooks, 
                 'noplaylist': True}
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(url)
@@ -112,14 +117,14 @@ async def repeat_play(vc, url, count, loop_count_msg):
         if vc.is_playing():
             vc.stop()
 
-# def hook(d, msg):
+# async def progress_hook(d, msg):
 #     # progress = tqdm(total=100)
 #     # o=0
 #     if d['status'] == 'finished':
 #         file_tuple = os.path.split(os.path.abspath(d['filename']))
 #         print("Done downloading {}".format(file_tuple[1]))
 #     if d['status'] == 'downloading':
-#         p = d['_percent_str']
-#         p = re.findall(r'\d{1,3}\.\d', p)[0]
-#         p = float(p)
-#         asyncio.get_event_loop().create_task(msg.edit(content="Downloading: `{} `%".format(p)))
+#         progress = d['_percent_str']
+#         speed = d['_speed_str']
+#         eta = d['_eta_str']
+#         await msg.edit(content=f"Downloading: {progress} Speed: {speed}")
