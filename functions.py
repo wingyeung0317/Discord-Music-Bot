@@ -9,6 +9,8 @@ from discord.ext.commands import Bot
 from functools import partial
 import re
 
+not_stop = False
+
 # User Triggered Player
 async def player(ctx, url, bot, loop=False):
     await ctx.response.defer()
@@ -28,7 +30,7 @@ async def player(ctx, url, bot, loop=False):
 
         # Play
         try:
-            await play_music(vc, voice_channel, file, loop)
+            await play_music(vc, voice_channel, file, loop, ctx)
         except Exception as e:
             await raise_except(e, msg, content="Audio is downloaded but error on play, please try again.")
         await msg.edit(content=f"Playing: {url} \n This bot is updated by killicit.wy")
@@ -80,7 +82,9 @@ def download_music(url):
         return filename
 
 # 播放音樂
-async def play_music(vc, voice_channel, file, loop):
+async def play_music(vc, voice_channel, file, loop, ctx):
+    global not_stop
+    not_stop = False
     if vc and vc.is_connected():
         # 若 bot 已經連線至語音頻道，則加入使用者所在的語音頻道
         await vc.move_to(voice_channel)
@@ -95,16 +99,18 @@ async def play_music(vc, voice_channel, file, loop):
     if loop == False:
         vc.play(discord.FFmpegPCMAudio(source=f"{file}"))
     else:
-        repeat_play(voice_channel.guild, vc, file)
+        not_stop = True
+        loop_count_msg = await ctx.followup.send(content="Loop Count: 0")
+        vc.play(discord.FFmpegPCMAudio(source=f"{file}"), after=lambda e: vc.client.loop.create_task(repeat_play(vc, file, 1, loop_count_msg)))
 
-def repeat_play(guild, vc, file):
-    vc.play(discord.FFmpegPCMAudio(source=f"{file}"), after=lambda e: repeat_play(guild, vc, file))
-
-# Print error to client and raise Exception again
-async def raise_except(e, msg, content):
-    print(e)
-    await msg.edit(content=content)
-    raise e
+async def repeat_play(vc, url, count, loop_count_msg):
+    global not_stop
+    while not_stop:
+        vc.play(discord.FFmpegPCMAudio(source=url), after=lambda e: vc.client.loop.create_task(repeat_play(vc, url, count+1, loop_count_msg)))
+        await loop_count_msg.edit(content=f"Loop count: {count}")
+    if not not_stop:
+        if vc.is_playing():
+            vc.stop()
 
 # def hook(d, msg):
 #     # progress = tqdm(total=100)
