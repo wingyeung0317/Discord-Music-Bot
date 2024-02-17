@@ -35,13 +35,32 @@ async def on_ready():
 @bot.tree.command(name='play')
 @app_commands.describe(url = "Enter the youtube link here")
 async def play(ctx: discord.Interaction, url: str):
-    await player(ctx, url, bot)
+    global player
+    player = Player(ctx, url, bot, False)
+    await player.start()
 
 # 建立一個 loop 指令，以loop音樂
 @bot.tree.command(name='loop')
 @app_commands.describe(url = "Enter the youtube link here")
 async def loop(ctx: discord.Interaction, url: str):
-    await player(ctx, url, bot, loop=True)
+    global player
+    player = Player(ctx, url, bot, True)
+    await player.start()
+
+@bot.tree.command(name='pause')
+async def pause(ctx: discord.Interaction):
+    await player.pause()
+    await ctx.response.send_message("paused")
+    
+@bot.tree.command(name='resume')
+async def resume(ctx: discord.Interaction):
+    await player.resume()
+    await ctx.response.send_message("resumed")
+    
+@bot.tree.command(name='stop')
+async def stop(ctx: discord.Interaction):
+    await player.stop()
+    await ctx.response.send_message("stopped")
 
 # 在 ./config.py 填入你的 bot token
 # TOKEN = "Your Token"
